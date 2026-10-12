@@ -26,8 +26,8 @@ public class AppArvoreGeral {
         NoB.adicionarFilho(NoG);
 
         NoD.adicionarFilho(NoF);
-
-        System.out.println("Tipo de Estrutura dos Filhos do No Raiz: " + arvoregeral.obterNoRaiz().obterFilhos());
+        //arvoregeral.obterNoRaiz().obterFilhos());
+        System.out.println("Tipo de Estrutura dos Filhos do No Raiz: " + StreamSupport.stream(arvoregeral.obterNoRaiz().obterFilhos().spliterator(), false).map(no -> String.valueOf(no.obterElemento())).collect(Collectors.toList()));
         System.out.println("Filhos do Nó Raiz: " + StreamSupport.stream(NoA.obterFilhos().spliterator(), false).map(filho -> String.valueOf(filho.obterElemento())).collect(Collectors.joining(", ")));
         System.out.println("Grau máximo da árvore: " + arvoregeral.grau());
         System.out.println("Tamanho da árvore: " + arvoregeral.tamanho());
