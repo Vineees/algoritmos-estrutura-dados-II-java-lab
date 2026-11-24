@@ -1,11 +1,14 @@
 package estruturas.naolineares.dinamicas.arvore;
 
-import java.util.Objects;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-
-public abstract class ArvoreAbstrata<T, N extends INoArvore<T>> implements IArvore<T, N> {
+public abstract class ArvoreAbstrata<T, N extends INoArvore<T>>
+        implements IArvore<T, N>,
+        IPercursoPreOrdem<T>,
+        IPercursoPosOrdem<T>,
+        IPercursoEmOrdemDeNivel<T> {
 
     private N noRaiz;
 
@@ -23,12 +26,30 @@ public abstract class ArvoreAbstrata<T, N extends INoArvore<T>> implements IArvo
 
     @Override
     public int tamanho() {
-        return this.estaVazia() ? 0 : this.obterNoRaiz().tamanho();
+        return tamanho(this.noRaiz);
+    }
+
+    private int tamanho(N no) {
+        if (no == null) return 0;
+        int tamanho = 1;
+        for (N filho : this.filhosDe(no)) {
+            tamanho += this.tamanho(filho);
+        }
+        return tamanho;
     }
 
     @Override
     public int altura() {
-        return this.estaVazia() ? -1 : this.obterNoRaiz().altura();
+        return altura(this.noRaiz);
+    }
+
+    private int altura(N no) {
+        if (no == null) return -1;
+        int maiorAlturaFilhos = -1;
+        for (N filho : this.filhosDe(no)) {
+            maiorAlturaFilhos = Math.max(maiorAlturaFilhos, this.altura(filho));
+        }
+        return 1 + maiorAlturaFilhos;
     }
 
     @Override
@@ -71,35 +92,72 @@ public abstract class ArvoreAbstrata<T, N extends INoArvore<T>> implements IArvo
     @Override
     public Iterable<N> recuperarIrmaosDe(T elemento) {
         List<N> irmaos = new ArrayList<>();
-
-        if (this.estaVazia()) {
+        if (this.estaVazia()) {return irmaos;}
+        if (Objects.equals(this.obterNoRaiz().obterElemento(), elemento)) {
             return irmaos;
         }
-
-        localizarIrmaos(this.obterNoRaiz(), elemento, irmaos);
-        return irmaos;
+        List<N> resultado = this.recuperarIrmaosDe(this.obterNoRaiz(), elemento);
+        return resultado != null ? resultado : irmaos;
     }
 
-    private boolean localizarIrmaos(N no, T elemento, List<N> irmaos) {
-        for (N filho : this.filhosDe(no)) {
+    private List<N> recuperarIrmaosDe(N noAtual, T elemento) {
+        if (noAtual == null) {
+            return null;
+        }
+        for (N filho : this.filhosDe(noAtual)) {
+            // Encontrou o nó cujo elemento foi passado por parâmetro
             if (Objects.equals(filho.obterElemento(), elemento)) {
-                for (N possivelIrmao : this.filhosDe(no)) {
-                    if (possivelIrmao != filho) {
-                        irmaos.add(possivelIrmao);
+                List<N> irmaos = new ArrayList<>();
+                for (N candidatoIrmao : this.filhosDe(noAtual)) {
+                    if (candidatoIrmao != filho) {
+                        irmaos.add(candidatoIrmao);
                     }
                 }
-
-                return true;
+                return irmaos;
+            }
+            List<N> resultado = this.recuperarIrmaosDe(filho, elemento);
+            if (resultado != null) {
+                return resultado;
             }
         }
+        return null;
+    }
 
-        for (N filho : this.filhosDe(no)) {
-            if (localizarIrmaos(filho, elemento, irmaos)) {
-                return true;
+    @Override
+    public void percorrerPreOrdem(java.util.function.Consumer<T> acao) {
+        this.percorrerPreOrdem(this.noRaiz, acao);
+    }
+
+    private void percorrerPreOrdem(N no, java.util.function.Consumer<T> acao) {
+        if (no == null) return;
+        acao.accept(no.obterElemento());
+        for (N filho : this.filhosDe(no)) this.percorrerPreOrdem(filho, acao);
+    }
+
+    @Override
+    public void percorrerPosOrdem(java.util.function.Consumer<T> acao) {
+        this.percorrerPosOrdem(this.noRaiz, acao);
+    }
+
+    private void percorrerPosOrdem(N no, java.util.function.Consumer<T> acao) {
+        if (no == null) return;
+        for (N filho : this.filhosDe(no)) this.percorrerPosOrdem(filho, acao);
+        acao.accept(no.obterElemento());
+    }
+
+    @Override
+    public void percorrerEmOrdemDeNivel(java.util.function.Consumer<T> acao) {
+        if (this.noRaiz == null) return;
+        java.util.Queue<N> fila = new java.util.LinkedList<>();
+        fila.add(this.noRaiz);
+
+        while (!fila.isEmpty()) {
+            N atual = fila.poll();
+            acao.accept(atual.obterElemento());
+            for (N filho : this.filhosDe(atual)) {
+                fila.add(filho);
             }
         }
-
-        return false;
     }
 
 }
